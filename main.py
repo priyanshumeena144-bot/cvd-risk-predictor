@@ -12,8 +12,6 @@ st.set_page_config(
 )
 
 # --- 2. Model Loading (From app.py) ---
-# Model aur scaler ko app ke start hote hi load karein
-# @st.cache_resource decorator ka matlab hai ki model sirf ek baar load hoga
 @st.cache_resource
 def load_model_and_scaler():
     print("--- Loading model and scaler ---")
@@ -74,11 +72,11 @@ if st.button("Click Here to Predict Risk", type="primary"):
     if model is None or scaler is None:
         st.error("Model Error: The model or scaler failed to load. Please check the server logs.")
     else:
-        # 1. Collect all 15 features
+        # 🎯 THE FIX IS HERE: The order of features is now corrected
         features_list = [
-            cigsPerDay, BPMeds, prevalentStroke, prevalentHyp, diabetes, 
-            totChol, sysBP, diaBP, BMI, heartRate, glucose,
-            male, age, education, currentSmoker
+            male, age, education, currentSmoker, cigsPerDay, BPMeds, 
+            prevalentStroke, prevalentHyp, diabetes, totChol, sysBP, 
+            diaBP, BMI, heartRate, glucose
         ]
 
         try:
