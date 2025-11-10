@@ -1,0 +1,26 @@
+FAN-IN / FAN-OUT ANALYSIS REPORT
+Project: CVD Risk Predictor
+====================================
+> Total Modules Scanned: 6
+> Performing dependency mapping...
+
+Module Name                       FAN-IN   FAN-OUT
+-------------------------------------------------
+Data Input (Streamlit UI)         0       1      
+Data Preprocessing                1       1      
+Feature Extraction                1       1      
+Model Prediction (CNN-LSTM-MLP)   1       1      
+Prediction API (FastAPI)          1       1      
+Result Visualization (Streamlit)  1       0      
+
+-------------------------------------------------
+TOTAL FAN-IN             : 5
+TOTAL FAN-OUT            : 5
+AVERAGE FAN-IN (per module): 0.83
+AVERAGE FAN-OUT (per module): 0.83
+
+> Coupling Level: LOW
+> Module Reusability: HIGH
+> Overall Maintainability: EXCELLENT
+
+Analysis completed successfully.

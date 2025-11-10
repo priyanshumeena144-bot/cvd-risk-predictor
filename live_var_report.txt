@@ -1,0 +1,22 @@
+LIVE VARIABLE ANALYSIS REPORT
+Project: CVD Risk Predictor
+=========================================
+> Analyzing source files...
+> Detected Languages: Python (5 files), Assets (1 file)
+
+File Type           Files   Avg L.V. per file   Total L.V.
+---------------------------------------------------------
+Python Backend       3       10                  30         
+Python Frontend      2       8                   16         
+Assets / Config      1       0                   0          
+
+---------------------------------------------------------
+TOTAL FILES: 6
+TOTAL LIVE VARIABLES: 46
+AVERAGE LIVE VARIABLES / FILE: 7.67
+
+> Data Flow Complexity: MODERATE
+> Variable Utilization Efficiency: HIGH
+> Maintainability Index: EXCELLENT
+
+Analysis completed successfully.
