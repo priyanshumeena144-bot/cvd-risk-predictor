@@ -1,52 +1,65 @@
+import streamlit as st
 import numpy as np
 import joblib
 from tensorflow import keras
-from flask import Flask, request, jsonify
+from streamlit_mic_recorder import speech_to_text
+import google.generativeai as genai
+import json
 
-# 1. Initialize the Flask App
-app = Flask(__name__)
-
-# 2. Load Your Model and Scaler
-print("--- Loading model and scaler ---")
-try:
-    # We use joblib.load for the scaler
+# --- 1. Load Model & Scaler ---
+@st.cache_resource
+def load_assets():
     scaler = joblib.load('my_scaler.joblib')
-    # We use keras.models.load_model for the deep learning model
     model = keras.models.load_model('my_cnn_lstm_model.keras')
-    print("✅ Model and scaler loaded successfully")
-except Exception as e:
-    print(f"❌ Error loading files: {e}")
+    return scaler, model
 
-# 3. Define Your Prediction Endpoint
-@app.route('/predict', methods=['POST'])
-def predict():
+scaler, model = load_assets()
+
+# --- 2. AI Setup (Gemini) ---
+# Secrets se API Key uthayega
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    ai_model = genai.GenerativeModel('gemini-pro')
+else:
+    st.error("Please add GEMINI_API_KEY in Streamlit Secrets!")
+
+def extract_features_with_ai(user_text):
+    prompt = f"""
+    Analyze this medical data: "{user_text}". 
+    Extract 15 numerical features for CVD prediction. 
+    Format: A simple Python list of 15 numbers only.
+    Example: [50, 1, 165, 75, 120, 80, 1, 1, 0, 0, 1, 25.4, 0, 1, 0]
+    """
+    response = ai_model.generate_content(prompt)
+    return json.loads(response.text)
+
+# --- 3. UI Interface ---
+st.title("🎙️ Voice-Powered CVD Predictor")
+
+# Voice Button
+text = speech_to_text(language='en', start_prompt="Boliye: 'Age 45, BMI 28, BP 130/80...'", key='voice_input')
+
+if text:
+    st.info(f"Aapne kaha: {text}")
     try:
-        # Get the JSON data sent by the user
-        data = request.json
-        # Extract the list of 15 features
-        features_list = data['features']
-        
-        # 1. Convert the list of 15 features into a 2D numpy array
-        features_np = np.array(features_list).reshape(1, -1)
-        
-        # 2. Apply the scaler (that you saved)
-        scaled_features = scaler.transform(features_np)
-        
-        # 3. Reshape the data for the CNN+LSTM model
-        reshaped_features = np.expand_dims(scaled_features, axis=2)
-        
-        # 4. Make the prediction
-        prediction = model.predict(reshaped_features)
-        
-        # 5. Get the single probability value from the prediction
-        probability = float(prediction[0][0])
-        
-        # Return the result as JSON
-        return jsonify({'risk_probability': probability})
-
+        with st.spinner("AI processing..."):
+            features = extract_features_with_ai(text)
+            
+        if len(features) == 15:
+            # --- 4. Prediction ---
+            features_np = np.array(features).reshape(1, -1)
+            scaled = scaler.transform(features_np)
+            reshaped = np.expand_dims(scaled, axis=2)
+            
+            prob = model.predict(reshaped)[0][0]
+            
+            st.metric("Risk Probability", f"{round(prob*100, 2)}%")
+            if prob > 0.5:
+                st.error("High Risk!")
+            else:
+                st.success("Low Risk!")
+        else:
+            st.warning("Could not extract all 15 features. Try again.")
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-# 4. Run the App
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+        st.error(f"Error: {e}")
+    
