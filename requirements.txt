@@ -3,3 +3,7 @@ tensorflow
 scikit-learn
 numpy
 requests
+streamlit-mic-recorder
+google-generativeai
+numpy
+joblib
