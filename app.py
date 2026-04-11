@@ -2,7 +2,7 @@ import streamlit as st
 import joblib
 import numpy as np
 import json
-import tf_keras as keras
+from tensorflow import keras
 from streamlit_mic_recorder import speech_to_text
 import google.generativeai as genai
 
