@@ -22,7 +22,7 @@ st.set_page_config(
 def load_assets():
     scaler = joblib.load('my_scaler.joblib')
     model = keras.models.load_model(
-        'my_cnn_lstm_model_fixed.h5',
+        'my_cnn_lstm_model_v2.h5',
         compile=False
     )
     return scaler, model
