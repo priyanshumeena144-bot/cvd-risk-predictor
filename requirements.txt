@@ -7,3 +7,5 @@ streamlit-mic-recorder
 google-generativeai
 numpy
 joblib
+tensorflow==2.15.1
+keras
