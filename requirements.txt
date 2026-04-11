@@ -9,5 +9,5 @@ numpy
 joblib
 streamlit==1.32.0
 tensorflow==2.15.1
-keras==2.15.0
+tf-keras==2.15.0
 numpy==1.26.4
