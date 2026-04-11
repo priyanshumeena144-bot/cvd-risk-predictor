@@ -21,10 +21,10 @@ st.set_page_config(
 @st.cache_resource
 def load_assets():
     scaler = joblib.load('my_scaler.joblib')
-model = keras.models.load_model(
-    'my_cnn_lstm_model_fixed.keras',
-    compile=False
-)
+    model = keras.models.load_model(
+        'my_cnn_lstm_model_fixed.keras',
+        compile=False
+    )
     return scaler, model
 
 scaler, model = load_assets()
