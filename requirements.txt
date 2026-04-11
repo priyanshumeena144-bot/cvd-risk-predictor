@@ -3,5 +3,6 @@ tensorflow==2.15.1
 tf-keras==2.15.1
 joblib
 numpy==1.26.4
+scikit-learn
 google-generativeai
 streamlit-mic-recorder
