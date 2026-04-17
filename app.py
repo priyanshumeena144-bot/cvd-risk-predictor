@@ -5,82 +5,70 @@ import tensorflow as tf
 from streamlit_mic_recorder import speech_to_text
 import google.generativeai as genai
 
-# Page Configuration
+# Page Config
 st.set_page_config(page_title="PulseMetrics AI", page_icon="⚡", layout="wide")
 
-# Industrial Stealth Theme (Pro UI)
+# Theme Styling
 st.markdown("""
 <style>
     .stApp { background-color: #030712; color: #e2e8f0; }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [data-baseweb="tab"] {
-        background-color: rgba(255,255,255,0.05);
-        border-radius: 4px;
-        padding: 8px 16px;
-    }
-    .stButton>button { 
-        background: linear-gradient(135deg, #4f46e5, #9333ea); 
-        color: white; border: none; font-weight: 600;
-    }
+    .stButton>button { background: linear-gradient(135deg, #4f46e5, #9333ea); color: white; border: none; }
 </style>
 """, unsafe_allow_html=True)
 
 @st.cache_resource
-def system_startup():
-    # 1. Gemini Engine Initialization
-    ai_engine = None
+def startup_engine():
+    # 1. AI Engine Logic
+    ai_mod = None
     if "GEMINI_API_KEY" in st.secrets:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        # Stable model identification
-        available_models = ['gemini-1.5-flash', 'gemini-1.5-pro']
-        for m_id in available_models:
+        # Use only the most reliable model IDs
+        for m_id in ['gemini-1.5-flash', 'gemini-pro']:
             try:
-                m = genai.GenerativeModel(m_id)
-                m.generate_content("ping", generation_config={"max_output_tokens": 1})
-                ai_engine = m
+                test_m = genai.GenerativeModel(m_id)
+                test_m.generate_content("hi", generation_config={"max_output_tokens": 1})
+                ai_mod = test_m
                 break
-            except Exception: continue
+            except: continue
 
-    # 2. Deep Learning Core Initialization
+    # 2. Neural Model Logic (Fixing the Batch Shape Error)
     scaler = None
     model = None
     try:
         scaler = joblib.load('my_scaler.joblib')
-        # Compatibility Mode: Loading via tf.keras with manual config override
+        # We use compile=False to avoid layer-specific initialization issues
         model = tf.keras.models.load_model('my_cnn_lstm_model_v4.h5', compile=False)
     except Exception as e:
-        st.sidebar.warning(f"Engine Core: {str(e)}")
+        # Fallback for 'batch_shape' unrecognized errors
+        st.sidebar.error(f"Engine Core: {e}")
+        model = None
         
-    return ai_engine, scaler, model
+    return ai_mod, scaler, model
 
-ai_engine, scaler, risk_model = system_startup()
+ai_engine, scaler, risk_model = startup_engine()
 
-# UI Layout
-st.title("⚡ PulseMetrics AI")
-st.caption("Research-Grade Cardiovascular Intelligence Platform")
+# Branding
+st.markdown("<h1 style='text-align: center; color: #6366f1;'>⚡ PulseMetrics AI</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #94a3b8;'>Advanced Cardiovascular Intelligence Platform</p>", unsafe_allow_html=True)
 
-tab_assistant, tab_neural = st.tabs(["AI Assistant", "Neural Scan"])
+tab_assist, tab_scan = st.tabs(["Assistant", "Neural Scan"])
 
-# --- AI ASSISTANT LOGIC ---
-with tab_assistant:
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+# Assistant Tab
+with tab_assist:
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    for msg in st.session_state.chat_history:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
 
-    # Input handlers
-    col_v, col_t = st.columns([1, 4])
-    with col_v:
-        v_input = speech_to_text(language='en', start_prompt="🎙️ Voice", key='v_main')
-    with col_t:
-        t_input = st.chat_input("Enter clinical symptoms...")
-
-    query = v_input if v_input else t_input
+    v_in = speech_to_text(language='en', start_prompt="🎙️ Voice", key='v_in')
+    t_in = st.chat_input("Enter symptoms...")
+    
+    query = v_in if v_in else t_in
 
     if query:
-        st.session_state.chat_history.append({"role": "user", "content": query})
+        st.session_state.messages.append({"role": "user", "content": query})
         with st.chat_message("user"):
             st.markdown(query)
             
@@ -88,37 +76,35 @@ with tab_assistant:
             with st.chat_message("assistant"):
                 with st.spinner("Analyzing..."):
                     try:
-                        res = ai_engine.generate_content(f"Analyze symptoms: {query}. Keep advice concise.")
+                        res = ai_engine.generate_content(query)
                         st.markdown(res.text)
-                        st.session_state.chat_history.append({"role": "assistant", "content": res.text})
+                        st.session_state.messages.append({"role": "assistant", "content": res.text})
                     except Exception as e:
-                        st.error(f"Engine Error: {e}")
-        else:
-            st.error("AI Engine Offline. Check Secrets.")
+                        st.error(f"AI Error: {e}")
 
-# --- NEURAL SCAN LOGIC ---
-with tab_neural:
-    st.subheader("Clinical Metric Analysis")
-    with st.form("scan_input"):
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            age = st.number_input("Age", 18, 100, 40)
-            chol = st.number_input("Cholesterol", 100, 400, 200)
-        with c2:
+# Scan Tab
+with tab_scan:
+    with st.form("scan_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            age = st.number_input("Age", 18, 100, 45)
+            chol = st.number_input("Total Cholesterol", 100, 400, 200)
             sys = st.number_input("Systolic BP", 80, 200, 120)
-            hr = st.number_input("Heart Rate", 40, 150, 72)
-        with c3:
+        with col2:
             bmi = st.number_input("BMI", 15.0, 50.0, 24.5)
-            glu = st.number_input("Glucose", 60, 300, 90)
+            glu = st.number_input("Glucose", 60, 300, 95)
+            hr = st.number_input("Heart Rate", 40, 160, 72)
             
-        if st.form_submit_button("PROCESS SCAN"):
+        if st.form_submit_button("COMPUTE RISK"):
             if risk_model and scaler:
-                # 15-feature alignment for model V4
-                features = [1, age, 2, 0, 0, 0, 0, 0, 0, chol, sys, 80, bmi, hr, glu]
-                scaled = scaler.transform(np.array(features).reshape(1, -1))
+                # 15-parameter sequence (Update based on your training data order)
+                data = [1, age, 2, 0, 0, 0, 0, 0, 0, chol, sys, 80, bmi, hr, glu]
+                scaled = scaler.transform(np.array(data).reshape(1, -1))
                 prob = float(risk_model.predict(np.expand_dims(scaled, axis=2), verbose=0)[0][0])
                 
                 if prob > 0.5:
-                    st.error(f"CVD Risk Detected: {prob*100:.1f}%")
+                    st.error(f"High Risk Alert: {prob*100:.1f}%")
                 else:
-                    st.success(f"Low Clinical Risk: {prob*100:.1f}%")
+                    st.success(f"Low Risk Profile: {prob*100:.1f}%")
+            else:
+                st.error("Model core is not active. Check system logs.")
