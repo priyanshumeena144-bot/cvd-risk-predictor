@@ -29,18 +29,18 @@ html, body, [class*="css"] { font-family: 'Rajdhani', sans-serif; background-col
 # ─────────────────────────────────────────
 # AI & ASSETS INITIALIZATION
 # ─────────────────────────────────────────
+# app.py ki line 48 ke aas-paas ise change karein:
 @st.cache_resource
 def setup_resources():
-    ai_mod = None
-    if "GEMINI_API_KEY" in st.secrets:
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        # Stable model selection logic
-        for m_name in ['gemini-1.5-flash', 'gemini-1.0-pro']:
-            try:
-                test_model = genai.GenerativeModel(m_name)
-                # Verify if it works
-                test_model.generate_content("ping")
-                ai_mod = test_model
+    # ... baki code ...
+    try:
+        # Purane .h5 files ke liye compile=False zaroori hai
+        model = keras.models.load_model('my_cnn_lstm_model_v4.h5', compile=False)
+    except Exception as e:
+        st.error(f"Model Loading Error: {e}")
+        # Ek dummy model load karein ya error handle karein
+        model = None
+    return ai_model, scaler, model
                 break
             except: continue
             
