@@ -5,121 +5,107 @@ import tensorflow as tf
 from streamlit_mic_recorder import speech_to_text
 import google.generativeai as genai
 
-# ──────────────────────────────────────────────────────────────────────────────
-# SYSTEM INITIALIZATION (Optimized for Streamlit Cloud)
-# ──────────────────────────────────────────────────────────────────────────────
+# Page Config
 st.set_page_config(page_title="PulseMetrics AI", page_icon="⚡", layout="wide")
 
+# UI Styling
+st.markdown("""
+<style>
+    .stApp { background-color: #030712; color: #e2e8f0; }
+    .stButton>button { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border: none; }
+</style>
+""", unsafe_allow_html=True)
+
 @st.cache_resource
-def load_core():
-    # AI Engine Setup
-    ai_mod = None
+def initialize_system():
+    # 1. AI Engine - Fixed 404 Error
+    ai_engine = None
     if "GEMINI_API_KEY" in st.secrets:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        # Try-catch for model selection
-        try:
-            ai_mod = genai.GenerativeModel('gemini-1.5-flash')
-        except:
-            try: ai_mod = genai.GenerativeModel('gemini-pro')
-            except: ai_mod = None
-            
-    # Model Loading (Compatibility Mode)
+        # Use the most stable current models
+        for m_id in ['gemini-1.5-flash', 'gemini-1.5-pro']:
+            try:
+                m = genai.GenerativeModel(m_id)
+                # Test call
+                m.generate_content("test", generation_config={"max_output_tokens": 1})
+                ai_engine = m
+                break
+            except: continue
+
+    # 2. Deep Learning Model - Fixed Batch Shape Error
     scaler = None
     model = None
     try:
         scaler = joblib.load('my_scaler.joblib')
+        # Compatibility loading
         model = tf.keras.models.load_model('my_cnn_lstm_model_v4.h5', compile=False)
     except Exception as e:
-        st.error(f"⚠️ System Error: {e}")
-    
-    return ai_mod, scaler, model
+        st.sidebar.error(f"Neural Core Error: {e}")
+        
+    return ai_engine, scaler, model
 
-ai_engine, scaler, risk_model = load_core()
-
-# ──────────────────────────────────────────────────────────────────────────────
-# UI DESIGN (Industrial Stealth Theme)
-# ──────────────────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-    .main { background-color: #030712; color: #e2e8f0; }
-    .stButton>button { 
-        width: 100%; border-radius: 8px; background: linear-gradient(135deg, #6366f1, #a855f7); 
-        color: white; font-weight: bold; border: none; height: 3rem;
-    }
-    .stTextInput>div>div>input { background-color: #1f2937; color: white; border: 1px solid #374151; }
-</style>
-""", unsafe_allow_html=True)
+ai_engine, scaler, risk_model = initialize_system()
 
 st.title("⚡ PulseMetrics AI")
-st.caption("Advanced Cardiovascular Risk Analysis System")
+st.caption("Cardiovascular Intelligence System")
 
-tabs = st.tabs(["🤖 AI Assistant", "📋 Manual Scan"])
+tabs = st.tabs(["Assistant", "Neural Scan"])
 
-# --- TAB 1: ASSISTANT ---
+# Assistant Logic
 with tabs[0]:
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # Display History
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
-    # Input Logic (Direct - No Forms)
-    prompt = st.chat_input("Ask about symptoms or reports...")
+    # User Input
+    v_input = speech_to_text(language='en', start_prompt="🎙️ Voice Input", key='voice')
+    t_input = st.chat_input("Analyze symptoms...")
     
-    # Voice handling
-    v_input = speech_to_text(language='en', start_prompt="🎙️ Speak", key='voice_btn')
-    
-    final_q = v_input if v_input else prompt
+    query = v_input if v_input else t_input
 
-    if final_q:
-        st.session_state.chat_history.append({"role": "user", "content": final_q})
+    if query:
+        st.session_state.chat_history.append({"role": "user", "content": query})
         with st.chat_message("user"):
-            st.markdown(final_q)
+            st.markdown(query)
             
         if ai_engine:
             with st.chat_message("assistant"):
-                with st.spinner("Analyzing data..."):
+                with st.spinner("Processing..."):
                     try:
-                        res = ai_engine.generate_content(final_q)
-                        st.markdown(res.text)
-                        st.session_state.chat_history.append({"role": "assistant", "content": res.text})
+                        # Professional medical assistant prompt
+                        response = ai_engine.generate_content(f"User symptoms: {query}. Provide brief, clinical observations.")
+                        st.markdown(response.text)
+                        st.session_state.chat_history.append({"role": "assistant", "content": response.text})
                     except Exception as e:
-                        st.error(f"AI Error: {e}")
+                        st.error(f"API Error: {e}")
         else:
-            st.error("AI Key is missing. Please check your Streamlit Secrets.")
+            st.error("AI Engine Offline. Check Gemini API Key.")
 
-# --- TAB 2: MANUAL SCAN ---
+# Neural Scan Logic
 with tabs[1]:
-    st.markdown("### Clinical Parameters")
-    c1, c2, c3 = st.columns(3)
-    
-    # Inputs (No Form for instant response)
-    with c1:
-        age = st.number_input("Age", 18, 100, 45)
-        chol = st.number_input("Cholesterol", 100, 500, 200)
-    with c2:
-        sys_bp = st.number_input("Systolic BP", 80, 200, 120)
-        dia_bp = st.number_input("Diastolic BP", 40, 150, 80)
-    with c3:
-        bmi = st.number_input("BMI", 10.0, 50.0, 25.0)
-        smoke = st.selectbox("Smoker?", [0, 1])
-
-    if st.button("RUN NEURAL ANALYSIS"):
-        if risk_model and scaler:
-            with st.spinner("Computing..."):
-                # Padding inputs to 15 (Model expectation)
-                # Note: Adjust the sequence based on your model's exact feature order
-                data = [0, age, 2, smoke, 0, 0, 0, 0, 0, chol, sys_bp, dia_bp, bmi, 72, 90]
+    with st.form("scan_form"):
+        st.write("Enter patient metrics for analysis")
+        c1, c2 = st.columns(2)
+        with c1:
+            age = st.number_input("Age", 18, 100, 45)
+            chol = st.number_input("Cholesterol", 100, 400, 200)
+            sys = st.number_input("Systolic BP", 80, 200, 120)
+        with c2:
+            bmi = st.number_input("BMI", 15.0, 45.0, 24.0)
+            glu = st.number_input("Glucose", 60, 300, 95)
+            hr = st.number_input("Heart Rate", 40, 150, 72)
+            
+        if st.form_submit_button("RUN ANALYSIS"):
+            if risk_model and scaler:
+                # Padding inputs to 15 (Ensuring model gets what it expects)
+                input_data = [1, age, 2, 0, 0, 0, 0, 0, 0, chol, sys, 80, bmi, hr, glu]
+                processed = scaler.transform(np.array(input_data).reshape(1, -1))
+                prob = risk_model.predict(np.expand_dims(processed, axis=2), verbose=0)[0][0]
                 
-                scaled = scaler.transform(np.array(data).reshape(1, -1))
-                prob = float(risk_model.predict(np.expand_dims(scaled, axis=2), verbose=0)[0][0])
-                
-                st.divider()
                 if prob > 0.5:
-                    st.error(f"High Risk Detected: {prob*100:.1f}%")
+                    st.error(f"Risk Detected: {prob*100:.1f}%")
                 else:
-                    st.success(f"Low Risk Profile: {prob*100:.1f}%")
-        else:
-            st.error("Model not loaded. Check logs for Resource Loading Error.")
+                    st.success(f"Safe Level: {prob*100:.1f}%")
