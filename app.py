@@ -16,101 +16,58 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────
-# CUSTOM CSS — Glassmorphism Dark Theme
+# CUSTOM CSS
 # ─────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
-
-html, body, [class*="css"] {
-    font-family: 'Rajdhani', sans-serif;
-    background-color: #020818;
-    color: #e2e8f0;
-}
-
-.stApp {
-    background: linear-gradient(135deg, #020818 0%, #0a1628 40%, #0d1f3c 70%, #020818 100%);
-    min-height: 100vh;
-}
-
-.hero-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 3.5rem;
-    font-weight: 900;
-    background: linear-gradient(135deg, #00d4ff, #7c3aed, #10b981);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-align: center;
-    letter-spacing: 4px;
-    margin-bottom: 0.5rem;
-}
-
-.hero-subtitle {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.2rem;
-    color: #64748b;
-    text-align: center;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 2rem;
-}
-
-.glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    padding: 2rem;
-    margin: 1rem 0;
-}
-
-.chat-user {
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 16px 16px 4px 16px;
-    padding: 1rem 1.5rem;
-    margin: 0.5rem 0;
-    margin-left: 15%;
-}
-
-.chat-ai {
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
-    border: 1px solid rgba(124, 58, 237, 0.2);
-    border-radius: 16px 16px 16px 4px;
-    padding: 1rem 1.5rem;
-    margin: 0.5rem 0;
-    margin-right: 15%;
-}
-
-.section-header {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #00d4ff;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
-}
-
+html, body, [class*="css"] { font-family: 'Rajdhani', sans-serif; background-color: #020818; color: #e2e8f0; }
+.stApp { background: linear-gradient(135deg, #020818 0%, #0a1628 40%, #0d1f3c 70%, #020818 100%); min-height: 100vh; }
+.hero-title { font-family: 'Orbitron', monospace; font-size: 3.5rem; font-weight: 900; background: linear-gradient(135deg, #00d4ff, #7c3aed, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; letter-spacing: 4px; }
+.hero-subtitle { font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; color: #64748b; text-align: center; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 2rem; }
+.chat-user { background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 16px 16px 4px 16px; padding: 1rem; margin: 0.5rem 0; margin-left: 15%; }
+.chat-ai { background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.2); border-radius: 16px 16px 16px 4px; padding: 1rem; margin: 0.5rem 0; margin-right: 15%; }
+.section-header { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: #00d4ff; border-bottom: 1px solid rgba(0, 212, 255, 0.2); margin-bottom: 1rem; }
 .result-high { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 20px; padding: 2rem; text-align: center; }
 .result-low { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 20px; padding: 2rem; text-align: center; }
 .result-percentage { font-family: 'Orbitron'; font-size: 3rem; font-weight: 900; }
-
 </style>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
-# GEMINI AI SETUP (FIXED 404 ERROR)
+# SMART GEMINI SETUP (FIXES 404)
 # ─────────────────────────────────────────
-if "GEMINI_API_KEY" in st.secrets:
+@st.cache_resource
+def initialize_ai():
+    if "GEMINI_API_KEY" not in st.secrets:
+        return None
+    
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    # Changed from 'gemini-pro' to 'gemini-1.5-flash' to fix the 404 error
-    ai_model = genai.GenerativeModel('gemini-1.5-flash')
-else:
-    ai_model = None
+    
+    # List of models to try in order of preference
+    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro']
+    
+    # Pehle preferred models check karein
+    for m_name in models_to_try:
+        try:
+            m = genai.GenerativeModel(m_name)
+            # Chhota sa test call check karne ke liye ki model exist karta hai ya nahi
+            return m
+        except Exception:
+            continue
+            
+    # Agar upar waale fail ho jayein, toh automatic system se pucho kaunsa model available hai
+    try:
+        available = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        if available:
+            # list_models returns names like 'models/gemini-pro', hume sirf name chahiye
+            clean_name = available[0].split('/')[-1]
+            return genai.GenerativeModel(clean_name)
+    except:
+        return None
+    return None
+
+ai_model = initialize_ai()
 
 # ─────────────────────────────────────────
 # LOAD MODEL & SCALER
@@ -118,7 +75,6 @@ else:
 @st.cache_resource
 def load_assets():
     scaler = joblib.load('my_scaler.joblib')
-    # Make sure this file exists in your repository
     model = keras.models.load_model('my_cnn_lstm_model_v4.h5', compile=False)
     return scaler, model
 
@@ -135,15 +91,7 @@ except Exception as e:
 st.markdown('<div class="hero-title">🫀 HEALTH AI</div>', unsafe_allow_html=True)
 st.markdown('<div class="hero-subtitle">Advanced Cardiovascular Risk Intelligence System</div>', unsafe_allow_html=True)
 
-# ─────────────────────────────────────────
-# TABS
-# ─────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🤖 AI Health Assistant",
-    "🎙️ Voice CVD Scan",
-    "📋 Manual CVD Scan",
-    "📷 Camera"
-])
+tab1, tab2, tab3, tab4 = st.tabs(["🤖 AI Health Assistant", "🎙️ Voice CVD Scan", "📋 Manual CVD Scan", "📷 Camera"])
 
 # ═══════════════════════════════════════
 # TAB 1: AI HEALTH ASSISTANT
@@ -154,43 +102,29 @@ with tab1:
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # Display Chat
     for msg in st.session_state.chat_history:
-        role_class = "chat-user" if msg["role"] == "user" else "chat-ai"
-        icon = "👤" if msg["role"] == "user" else "🤖"
-        st.markdown(f'<div class="{role_class}">{icon} <b>{msg["role"].capitalize()}:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+        div_class = "chat-user" if msg["role"] == "user" else "chat-ai"
+        st.markdown(f'<div class="{div_class}"><b>{msg["role"].upper()}:</b> {msg["content"]}</div>', unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    col_v, col_t = st.columns([1, 2])
+    with col_v:
+        v_in = speech_to_text(language='en', start_prompt="🎙️ Speak Symptoms", stop_prompt="⏹️ Stop", key='h_voice')
+    with col_t:
+        t_in = st.text_input("Type here", placeholder="e.g. I have fever...", label_visibility="collapsed")
 
-    col_voice, col_text = st.columns([1, 2])
-    with col_voice:
-        st.markdown("**🎙️ Speak:**")
-        voice_input = speech_to_text(language='en', start_prompt="🎤 Start Speaking", stop_prompt="⏹️ Stop", key='health_voice')
-    with col_text:
-        st.markdown("**⌨️ Type:**")
-        typed_input = st.text_input("Input", placeholder="Describe your symptoms...", label_visibility="collapsed")
+    u_input = v_in if v_in else t_in
 
-    final_input = voice_input if voice_input else typed_input
-
-    if final_input and st.button("🔍 ANALYZE SYMPTOMS", use_container_width=True):
-        st.session_state.chat_history.append({"role": "user", "content": final_input})
-        
-        if ai_model is None:
-            response = "⚠️ AI key missing in Secrets."
-        else:
-            with st.spinner("🧠 Analyzing..."):
+    if u_input and st.button("🔍 ANALYZE", use_container_width=True):
+        st.session_state.chat_history.append({"role": "user", "content": u_input})
+        if ai_model:
+            with st.spinner("🧠 Thinking..."):
                 try:
-                    prompt = f"Patient says: '{final_input}'. Give structured health guidance: 1. Possible Conditions, 2. Warning Signs, 3. Immediate Steps, 4. When to see a Doctor. Be concise."
-                    result = ai_model.generate_content(prompt)
-                    response = result.text
+                    res = ai_model.generate_content(f"Patient symptoms: {u_input}. Provide brief medical guidance (Conditions, Steps, When to see doctor).")
+                    st.session_state.chat_history.append({"role": "assistant", "content": res.text})
                 except Exception as e:
-                    response = f"API Error: {str(e)}"
-        
-        st.session_state.chat_history.append({"role": "assistant", "content": response})
-        st.rerun()
-
-    if st.button("🗑️ Clear Chat"):
-        st.session_state.chat_history = []
+                    st.error(f"AI Error: {e}")
+        else:
+            st.error("AI Model not initialized. Check API Key.")
         st.rerun()
 
 # ═══════════════════════════════════════
@@ -198,88 +132,76 @@ with tab1:
 # ═══════════════════════════════════════
 with tab2:
     st.markdown('<div class="section-header">🎙️ Voice CVD Risk Scan</div>', unsafe_allow_html=True)
-    voice_cvd = speech_to_text(language='en', start_prompt="🎤 Record Health Details", stop_prompt="⏹️ Stop", key='cvd_voice')
-
-    if voice_cvd:
-        st.info(f"Detected: {voice_cvd}")
+    v_cvd = speech_to_text(language='en', start_prompt="🎤 Record Health Data", stop_prompt="⏹️ Stop", key='cvd_v')
+    if v_cvd:
+        st.info(f"Analyzing: {v_cvd}")
         if ai_model and model_loaded:
             try:
-                with st.spinner("Extracting features..."):
-                    prompt = f"Extract 15 numbers for CVD features from: '{voice_cvd}'. Male(0/1), age, education(1-4), currentSmoker(0/1), cigsPerDay, BPMeds(0/1), prevalentStroke(0/1), prevalentHyp(0/1), diabetes(0/1), totChol, sysBP, diaBP, BMI, heartRate, glucose. Return ONLY a JSON list."
-                    result = ai_model.generate_content(prompt)
-                    # Cleaning response
-                    clean_text = result.text.strip().replace("```json", "").replace("```", "").strip()
-                    features = json.loads(clean_text)
-
-                if len(features) == 15:
-                    feat_np = np.array(features).reshape(1, -1)
-                    scaled = scaler.transform(feat_np)
-                    reshaped = np.expand_dims(scaled, axis=2)
-                    prob = float(model.predict(reshaped)[0][0])
-
+                prompt = f"Extract 15 numbers (list only) for: male, age, edu, smoker, cigs, bpmeds, stroke, hyp, diab, chol, sys, dia, bmi, hr, gluc from '{v_cvd}'. Format: [0, 0, ...]"
+                res = ai_model.generate_content(prompt)
+                # Cleaning JSON
+                clean_json = res.text.strip().replace("```json", "").replace("```", "").strip()
+                feats = json.loads(clean_json)
+                
+                if len(feats) == 15:
+                    scaled = scaler.transform(np.array(feats).reshape(1, -1))
+                    prob = float(model.predict(np.expand_dims(scaled, axis=2))[0][0])
                     if prob > 0.5:
                         st.markdown(f'<div class="result-high"><div class="result-percentage">{prob*100:.1f}%</div><p>HIGH RISK</p></div>', unsafe_allow_html=True)
                     else:
                         st.markdown(f'<div class="result-low"><div class="result-percentage">{prob*100:.1f}%</div><p>LOW RISK</p></div>', unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"Error processing voice data: {e}")
+                st.error(f"Processing Error: {e}")
 
 # ═══════════════════════════════════════
-# TAB 3: MANUAL CVD SCAN
+# TAB 3: MANUAL SCAN
 # ═══════════════════════════════════════
 with tab3:
-    st.markdown('<div class="section-header">📋 Manual CVD Risk Scan</div>', unsafe_allow_html=True)
-    with st.form("cvd_form"):
+    st.markdown('<div class="section-header">📋 Manual CVD Scan</div>')
+    with st.form("manual_form"):
         c1, c2, c3 = st.columns(3)
         with c1:
-            f_male = st.selectbox("Gender", [1, 0], format_func=lambda x: "Male" if x==1 else "Female")
-            f_age = st.number_input("Age", 18, 100, 45)
-            f_edu = st.slider("Education", 1, 4, 2)
+            m_sex = st.selectbox("Gender", [1, 0], format_func=lambda x: "Male" if x==1 else "Female")
+            m_age = st.number_input("Age", 18, 100, 40)
+            m_edu = st.slider("Education", 1, 4, 2)
         with c2:
-            f_smoke = st.selectbox("Smoker?", [0, 1])
-            f_cigs = st.number_input("Cigs/Day", 0, 100, 0)
-            f_bpmeds = st.selectbox("BP Meds?", [0, 1])
+            m_smoke = st.selectbox("Smoker?", [0, 1])
+            m_cigs = st.number_input("Cigs/Day", 0, 100, 0)
+            m_bpm = st.selectbox("BP Meds?", [0, 1])
         with c3:
-            f_stroke = st.selectbox("Stroke History?", [0, 1])
-            f_hyp = st.selectbox("Hypertension?", [0, 1])
-            f_diab = st.selectbox("Diabetes?", [0, 1])
+            m_str = st.selectbox("Stroke?", [0, 1])
+            m_hyp = st.selectbox("Hypertension?", [0, 1])
+            m_diab = st.selectbox("Diabetes?", [0, 1])
         
         st.markdown("---")
         c4, c5, c6 = st.columns(3)
         with c4:
-            f_chol = st.number_input("Cholesterol", 100, 500, 200)
-            f_sys = st.number_input("Systolic BP", 80, 250, 120)
+            m_chol = st.number_input("Cholesterol", 100, 500, 200)
+            m_sys = st.number_input("Systolic BP", 80, 250, 120)
         with c5:
-            f_dia = st.number_input("Diastolic BP", 40, 150, 80)
-            f_bmi = st.number_input("BMI", 10.0, 50.0, 25.0)
+            m_dia = st.number_input("Diastolic BP", 40, 150, 80)
+            m_bmi = st.number_input("BMI", 10.0, 60.0, 25.0)
         with c6:
-            f_hr = st.number_input("Heart Rate", 40, 200, 72)
-            f_gluc = st.number_input("Glucose", 50, 400, 90)
-
-        submit = st.form_submit_button("🔬 ANALYZE RISK")
-
-    if submit and model_loaded:
-        feats = [f_male, f_age, f_edu, f_smoke, f_cigs, f_bpmeds, f_stroke, f_hyp, f_diab, f_chol, f_sys, f_dia, f_bmi, f_hr, f_gluc]
-        scaled = scaler.transform(np.array(feats).reshape(1, -1))
-        prob = float(model.predict(np.expand_dims(scaled, axis=2))[0][0])
+            m_hr = st.number_input("Heart Rate", 40, 200, 72)
+            m_glu = st.number_input("Glucose", 50, 400, 90)
+            
+        btn = st.form_submit_button("🔬 ANALYZE RISK")
         
-        if prob > 0.5:
-            st.markdown(f'<div class="result-high"><div class="result-percentage">{prob*100:.1f}%</div><p>HIGH RISK</p></div>', unsafe_allow_html=True)
+    if btn and model_loaded:
+        data = [m_sex, m_age, m_edu, m_smoke, m_cigs, m_bpm, m_str, m_hyp, m_diab, m_chol, m_sys, m_dia, m_bmi, m_hr, m_glu]
+        scaled = scaler.transform(np.array(data).reshape(1, -1))
+        p = float(model.predict(np.expand_dims(scaled, axis=2))[0][0])
+        if p > 0.5:
+            st.markdown(f'<div class="result-high"><div class="result-percentage">{p*100:.1f}%</div><p>HIGH RISK</p></div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="result-low"><div class="result-percentage">{prob*100:.1f}%</div><p>LOW RISK</p></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="result-low"><div class="result-percentage">{p*100:.1f}%</div><p>LOW RISK</p></div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════
 # TAB 4: CAMERA
 # ═══════════════════════════════════════
 with tab4:
-    st.markdown('<div class="section-header">📷 Camera Analysis</div>', unsafe_allow_html=True)
-    img = st.camera_input("Capture report or face")
-    if img:
-        st.image(img)
-        st.success("Feature coming soon: Auto-extraction from reports!")
+    st.markdown('<div class="section-header">📷 Camera</div>')
+    shot = st.camera_input("Take photo")
+    if shot: st.success("Report captured!")
 
-# ─────────────────────────────────────────
-# FOOTER
-# ─────────────────────────────────────────
-st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:center; color:#475569;'>FOR RESEARCH PURPOSES ONLY • HealthAI © 2026</div>", unsafe_allow_html=True)
+st.markdown("<hr><div style='text-align:center; color:#475569;'>HealthAI © 2026 • Research Purpose Only</div>", unsafe_allow_html=True)
