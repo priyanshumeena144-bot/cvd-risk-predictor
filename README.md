@@ -1,264 +1,123 @@
-# ❤️ Cardiovascular Risk Predictor
+# Cardiovascular Risk Predictor and Symptom Checker
 
-An advanced AI-powered web application to predict your 10-year risk of Coronary Heart Disease using **CNN-LSTM neural networks**.
+A Streamlit web app for educational health screening. Users can enter symptoms to get possible condition suggestions and doctor consultation advice. The app also includes a cardiovascular disease risk predictor using a CNN-LSTM model.
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.13+-orange.svg)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+## Features
 
----
+- Symptom checker with possible disease suggestions
+- Doctor consultation guidance for every result
+- Emergency warning for serious symptoms such as chest pain or shortness of breath
+- Manual cardiovascular risk prediction form
+- Voice input support when optional packages/API keys are configured
+- Camera input placeholder for future medical report/photo features
+- Health dashboard with targets, tips, and trusted health resources
 
-## 🎯 Features
+## Important Disclaimer
 
-### 🎙️ Voice Input
-- Record your health information via microphone
-- AI extracts 15 medical features automatically
-- Natural language processing powered by Gemini AI
+This project is for educational purposes only. It does not provide a confirmed medical diagnosis and must not replace professional medical advice. Users should consult a qualified doctor before making health decisions or taking medicine.
 
-### 📋 Manual Form
-- Enter health data through an intuitive form
-- Real-time validation
-- Comprehensive health metrics input
+## Tech Stack
 
-### 🩺 Medical Parameters
-- **Personal Info:** Age, Gender, Education level
-- **Lifestyle:** Smoking status, Cigarettes per day
-- **Medical History:** Stroke, Hypertension, Diabetes
-- **Vitals:** Blood pressure, Cholesterol, BMI, Heart rate, Glucose
+- Python
+- Streamlit
+- TensorFlow/Keras
+- NumPy
+- Scikit-learn
+- Joblib
+- Google Gemini API, optional
 
-### 📊 Advanced Analysis
-- **Risk Score:** 10-year CHD probability percentage
-- **Risk Classification:** Low (🟢), Medium (🟡), High (🔴)
-- **Personalized Recommendations:** AI-generated health advice
-- **Risk Factor Analysis:** Identify key health concerns
+## Project Files
 
-### 📈 Health Dashboard
-- Recommended health targets
-- Quick health improvement tips
-- Links to authoritative health resources
-
----
-
-## 🚀 Quick Start
-
-### Automated Setup (Recommended)
-
-**Windows:**
-```bash
-setup.bat
+```text
+app.py                         Main Streamlit app
+requirements.txt               Python dependencies
+my_cnn_lstm_model.keras        Trained CVD prediction model
+my_scaler.joblib               Feature scaler
+.streamlit/config.toml         Streamlit theme/config
+run_app.bat                    Windows local launcher
+PUBLIC_DEPLOYMENT_STEPS.md     Public deployment guide
 ```
 
-**Mac/Linux:**
-```bash
-chmod +x setup.sh
-./setup.sh
-```
+## Run Locally
 
-Then run: `streamlit run app.py`
-
-### Manual Setup
+Clone the repository and install dependencies:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# Add your Gemini API key
-# Create .streamlit/secrets.toml with: GEMINI_API_KEY = "your-key"
-
-streamlit run app.py
 ```
 
-**Visit:** `http://localhost:8501`
+Run the app:
 
----
-
-## 🐳 Docker Deployment
-
-### Using Docker Compose
 ```bash
-docker-compose up --build
+python -m streamlit run app.py
 ```
 
-### Manual Docker
-```bash
-docker build -t cvd-predictor .
-docker run -p 8501:8501 -e GEMINI_API_KEY="your-key" cvd-predictor
+Open:
+
+```text
+http://127.0.0.1:8501
 ```
 
----
+On Windows, you can also double-click:
 
-## ☁️ Cloud Deployment
-
-### Streamlit Cloud (Easiest)
-1. Push to GitHub
-2. Visit [share.streamlit.io](https://share.streamlit.io)
-3. Create new app from repository
-4. Add `GEMINI_API_KEY` in app secrets
-5. **Done!** 🎉
-
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for AWS, GCP, Hugging Face, and other options.
-
----
-
-## 📋 Project Files
-
-```
-├── app.py                      # Main Streamlit application
-├── requirements.txt            # Python dependencies
-├── Dockerfile                  # Docker configuration
-├── docker-compose.yml          # Docker Compose setup
-├── .streamlit/
-│   ├── config.toml            # Streamlit settings
-│   ├── secrets.toml           # API keys (local only)
-│   └── secrets.example.toml   # Template
-├── README.md                   # This file
-├── QUICKSTART.md              # Quick reference
-├── DEPLOYMENT_GUIDE.md        # Detailed deployment
-├── setup.sh / setup.bat       # Automated setup
-├── my_cnn_lstm_model.keras    # ML model
-├── my_scaler.joblib           # Feature scaler
-└── .gitignore                 # Git ignore rules
+```text
+run_app.bat
 ```
 
----
+Keep the terminal window open while using the website.
 
-## 🔑 API Key Setup
+## Public Deployment
 
-### Get Gemini API Key
-1. Visit: [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
-2. Click "Create API Key"
-3. Copy your key
-4. Create `.streamlit/secrets.toml`:
+To make the website available for everyone, deploy it on Streamlit Community Cloud:
+
+1. Push this repository to GitHub.
+2. Go to https://share.streamlit.io
+3. Click New app.
+4. Select this repository.
+5. Set the main file path to:
+
+```text
+app.py
+```
+
+6. Click Deploy.
+
+Streamlit will create a public link like:
+
+```text
+https://your-app-name.streamlit.app
+```
+
+Share that link with your teacher or anyone else.
+
+## Optional Gemini Setup
+
+The app works without Gemini. If you want voice AI extraction, add this secret in Streamlit Cloud or `.streamlit/secrets.toml` locally:
+
 ```toml
-GEMINI_API_KEY = "your-key-here"
+GEMINI_API_KEY = "your_api_key_here"
 ```
 
----
+Without this key, the Symptom Checker and Manual Form still work normally.
 
-## 🧠 Model Details
+## Symptom Checker Examples
 
-**Architecture:** CNN-LSTM-MLP
-- **Input:** 15 medical features
-- **CNN Layer:** Feature extraction
-- **LSTM Layer:** Pattern recognition
-- **Output:** CVD risk probability (0-1)
+Try symptoms like:
 
-**Dataset:** Framingham Heart Study (3,658 patients, 10-year follow-up)
-
-**Performance:**
-- Accuracy: 87.2%
-- Sensitivity: 85.1%
-- Specificity: 88.9%
-- AUC-ROC: 0.912
-
----
-
-## 📊 Risk Classification
-
-| Level | Probability | Action |
-|-------|------------|--------|
-| 🟢 Low | < 30% | Maintain healthy lifestyle |
-| 🟡 Medium | 30-50% | Lifestyle modifications |
-| 🔴 High | > 50% | Consult cardiologist |
-
----
-
-## 💡 Features
-
-✅ **Voice Input** — Speak your health data
-✅ **Manual Form** — Enter data manually
-✅ **AI Recommendations** — Personalized health advice
-✅ **Risk Analysis** — Identify key risk factors
-✅ **Health Dashboard** — Resources and tips
-✅ **Beautiful UI** — Modern gradient styling
-✅ **Docker Ready** — One-command deployment
-✅ **Cloud Ready** — Deploy anywhere
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Streamlit 1.28+ |
-| Backend | Python 3.8+ |
-| ML/AI | TensorFlow 2.13+, Gemini Pro |
-| Data | NumPy, Scikit-learn |
-| Container | Docker, Docker Compose |
-| Deployment | Streamlit Cloud, AWS, GCP |
-
----
-
-## ⚖️ Disclaimer
-
-⚠️ **This app is for educational purposes only.**
-- NOT a substitute for professional medical advice
-- Always consult a qualified physician
-- No personal data is stored
-- Keep GEMINI_API_KEY confidential
-
----
-
-## 🐛 Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Model not found | Ensure `.keras` and `.joblib` files exist |
-| API key error | Add to `.streamlit/secrets.toml` |
-| Port in use | `streamlit run app.py --server.port 8080` |
-| Import error | Run `pip install -r requirements.txt` |
-| Memory error | Increase Docker memory allocation |
-
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed troubleshooting.
-
----
-
-## 📚 Documentation
-
-- [QUICKSTART.md](./QUICKSTART.md) — Quick reference guide
-- [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) — Deployment instructions
-- [Streamlit Docs](https://docs.streamlit.io) — Framework documentation
-- [TensorFlow Docs](https://www.tensorflow.org) — ML framework
-
----
-
-## 🔄 Common Commands
-
-```bash
-# Run app
-streamlit run app.py
-
-# Run with specific port
-streamlit run app.py --server.port 8080
-
-# Docker build and run
-docker-compose up --build
-
-# Clean up Docker
-docker system prune
-
-# View Docker logs
-docker logs cvd-risk-predictor
+```text
+fever, cough, body pain, headache
 ```
 
----
+or:
 
-## 📞 Support
+```text
+chest pain, shortness of breath, sweating
+```
 
-- 📖 See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-- 🚀 Check [QUICKSTART.md](./QUICKSTART.md)
-- 💬 Create an issue on GitHub
+The app will show possible conditions and advise whether the user should consult a doctor or seek urgent care.
 
----
+## GitHub Repository
 
-## 📜 License
-
-MIT License - Free for personal and educational use
-
----
-
-**Made with ❤️ for healthcare innovation**
-
-Let's build a healthier future together! 🏥💪
+```text
+https://github.com/priyanshumeena144-bot/cvd-risk-predictor
+```
