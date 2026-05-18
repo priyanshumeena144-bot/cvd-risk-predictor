@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: cvd_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///cvd_app.db
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - ./backend:/app/backend
+      - ./my_cnn_lstm_model_fixed.keras:/app/my_cnn_lstm_model_fixed.keras
+      - ./my_scaler.joblib:/app/my_scaler.joblib
+      - cvd_db:/app/data
+    networks:
+      - cvd_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: cvd_frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    networks:
+      - cvd_network
+
+  # Nginx Reverse Proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: cvd_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - cvd_network
+
+networks:
+  cvd_network:
+    driver: bridge
+
+volumes:
+  cvd_db:
+    driver: local

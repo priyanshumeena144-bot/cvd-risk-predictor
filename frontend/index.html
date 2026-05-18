@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❤️ CVD Risk Predictor - 3D Health Assessment</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <div class="navbar-brand">
+                    <div class="logo-3d">❤️</div>
+                    <h1>CVD Predictor 3D</h1>
+                </div>
+                <ul class="navbar-menu" id="navMenu">
+                    <li><a href="#" onclick="navigate('dashboard')" class="nav-link active">Dashboard</a></li>
+                    <li><a href="#" onclick="navigate('predict')" class="nav-link">Predict</a></li>
+                    <li><a href="#" onclick="navigate('analytics')" class="nav-link">Analytics</a></li>
+                    <li><a href="#" onclick="navigate('profile')" class="nav-link">Profile</a></li>
+                    <li><a href="#" onclick="logout()" class="btn-logout">Logout</a></li>
+                </ul>
+                <div class="hamburger" id="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Auth Container -->
+            <div id="authContainer" class="auth-section">
+                <!-- Login Page -->
+                <div id="loginPage" class="page active">
+                    <div class="auth-bg">
+                        <canvas id="authCanvas"></canvas>
+                    </div>
+                    <div class="auth-container">
+                        <div class="auth-card">
+                            <div class="auth-header">
+                                <h2>Welcome Back</h2>
+                                <p>Login to your CVD Risk Predictor account</p>
+                            </div>
+                            <form onsubmit="handleLogin(event)">
+                                <div class="form-group">
+                                    <label for="loginEmail">Email</label>
+                                    <input type="email" id="loginEmail" required placeholder="your@email.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="loginPassword">Password</label>
+                                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                                </div>
+                                <button type="submit" class="btn-primary btn-login">Login</button>
+                            </form>
+                            <p class="auth-toggle">Don't have an account? <a href="#" onclick="toggleAuth()">Register</a></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Register Page -->
+                <div id="registerPage" class="page">
+                    <div class="auth-bg">
+                        <canvas id="authCanvas2"></canvas>
+                    </div>
+                    <div class="auth-container">
+                        <div class="auth-card">
+                            <div class="auth-header">
+                                <h2>Create Account</h2>
+                                <p>Join CVD Risk Predictor today</p>
+                            </div>
+                            <form onsubmit="handleRegister(event)">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="regFirstName">First Name</label>
+                                        <input type="text" id="regFirstName" placeholder="John">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="regLastName">Last Name</label>
+                                        <input type="text" id="regLastName" placeholder="Doe">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regEmail">Email</label>
+                                    <input type="email" id="regEmail" required placeholder="your@email.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="regPassword">Password</label>
+                                    <input type="password" id="regPassword" required placeholder="••••••••">
+                                </div>
+                                <div class="form-group">
+                                    <label for="regConfirmPassword">Confirm Password</label>
+                                    <input type="password" id="regConfirmPassword" required placeholder="••••••••">
+                                </div>
+                                <button type="submit" class="btn-primary btn-register">Register</button>
+                            </form>
+                            <p class="auth-toggle">Already have an account? <a href="#" onclick="toggleAuth()">Login</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Container (After Login) -->
+            <div id="appContainer" class="app-section" style="display:none;">
+                
+                <!-- Dashboard Page -->
+                <div id="dashboardPage" class="page-content active">
+                    <div class="dashboard-header">
+                        <h2>❤️ Health Dashboard</h2>
+                        <p>Your personalized cardiovascular health overview</p>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <!-- Risk Score Card (3D) -->
+                        <div class="dashboard-card card-large">
+                            <div class="card-header">Risk Score</div>
+                            <div class="risk-3d-container" id="riskContainer"></div>
+                            <div class="risk-details">
+                                <p class="risk-percentage" id="riskPercentage">0%</p>
+                                <p class="risk-category" id="riskCategory">No Data</p>
+                            </div>
+                        </div>
+
+                        <!-- Health Metrics Card -->
+                        <div class="dashboard-card">
+                            <div class="card-header">📊 Health Metrics</div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">Blood Pressure</div>
+                                    <div class="metric-value" id="bpValue">-</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Cholesterol</div>
+                                    <div class="metric-value" id="chValue">-</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">BMI</div>
+                                    <div class="metric-value" id="bmiValue">-</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Heart Rate</div>
+                                    <div class="metric-value" id="hrValue">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3D Chart Card -->
+                        <div class="dashboard-card card-large">
+                            <div class="card-header">📈 Health Trends (3D)</div>
+                            <div id="chart3d" class="chart-3d-container"></div>
+                        </div>
+
+                        <!-- Recommendations Card -->
+                        <div class="dashboard-card">
+                            <div class="card-header">💡 AI Recommendations</div>
+                            <div class="recommendations-list" id="recommendationsList">
+                                <p class="placeholder">✓ Exercise regularly (30 mins/day)</p>
+                                <p class="placeholder">✓ Reduce salt intake</p>
+                                <p class="placeholder">✓ Monitor blood pressure</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Predict Page -->
+                <div id="predictPage" class="page-content">
+                    <div class="predict-header">
+                        <h2>🏥 CVD Risk Prediction</h2>
+                        <p>Enter your health information for an accurate prediction</p>
+                    </div>
+
+                    <div class="predict-container">
+                        <div class="prediction-form-section">
+                            <form id="predictionForm" onsubmit="handlePredict(event)">
+                                <div class="form-tabs">
+                                    <button type="button" class="tab-btn active" onclick="switchTab('personal')" data-tab="personal">Personal</button>
+                                    <button type="button" class="tab-btn" onclick="switchTab('lifestyle')" data-tab="lifestyle">Lifestyle</button>
+                                    <button type="button" class="tab-btn" onclick="switchTab('medical')" data-tab="medical">Medical</button>
+                                    <button type="button" class="tab-btn" onclick="switchTab('vitals')" data-tab="vitals">Vitals</button>
+                                </div>
+
+                                <div class="form-section active" id="personalTab">
+                                    <h3>Personal Information</h3>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="age">Age</label>
+                                            <input type="number" id="age" min="18" max="120" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="gender">Gender</label>
+                                            <select id="gender" required>
+                                                <option value="">Select...</option>
+                                                <option value="M">Male</option>
+                                                <option value="F">Female</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="education">Education Level</label>
+                                            <select id="education" required>
+                                                <option value="">Select...</option>
+                                                <option value="1">Less than 9th grade</option>
+                                                <option value="2">9-11th grade</option>
+                                                <option value="3">High School graduate</option>
+                                                <option value="4">Some college</option>
+                                                <option value="5">College graduate</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section" id="lifestyleTab">
+                                    <h3>Lifestyle Information</h3>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="smoking">Smoking Status</label>
+                                            <select id="smoking" required>
+                                                <option value="">Select...</option>
+                                                <option value="0">Never smoked</option>
+                                                <option value="1">Quit smoking</option>
+                                                <option value="2">Currently smoking</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="cigarettes">Cigarettes per Day</label>
+                                            <input type="number" id="cigarettes" min="0" max="100">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="alcohol">Alcohol Consumption</label>
+                                            <select id="alcohol" required>
+                                                <option value="">Select...</option>
+                                                <option value="0">None</option>
+                                                <option value="1">Moderate</option>
+                                                <option value="2">Heavy</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section" id="medicalTab">
+                                    <h3>Medical History</h3>
+                                    <div class="checkbox-group">
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="stroke">
+                                            <span>History of Stroke</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="hypertension">
+                                            <span>Hypertension</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="diabetes">
+                                            <span>Diabetes</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="arthritis">
+                                            <span>Arthritis</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="kidney">
+                                            <span>Kidney Disease</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="copd">
+                                            <span>COPD</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-section" id="vitalsTab">
+                                    <h3>Health Vitals</h3>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="sysBP">Systolic BP (mmHg)</label>
+                                            <input type="number" id="sysBP" min="60" max="250" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="diaBP">Diastolic BP (mmHg)</label>
+                                            <input type="number" id="diaBP" min="40" max="150" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="cholesterol">Total Cholesterol (mg/dL)</label>
+                                            <input type="number" id="cholesterol" min="100" max="400" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="bmi">BMI (kg/m²)</label>
+                                            <input type="number" id="bmi" min="10" max="60" step="0.1" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="heartRate">Heart Rate (bpm)</label>
+                                            <input type="number" id="heartRate" min="40" max="200" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="glucose">Fasting Glucose (mg/dL)</label>
+                                            <input type="number" id="glucose" min="60" max="400" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn-primary btn-predict">🔍 Predict Risk</button>
+                            </form>
+                        </div>
+
+                        <!-- Prediction Result Section -->
+                        <div class="prediction-result-section" id="resultSection" style="display:none;">
+                            <div class="result-card">
+                                <div class="result-header">
+                                    <h3>Your Prediction Result</h3>
+                                </div>
+                                <div class="result-body">
+                                    <div class="result-score-container">
+                                        <div id="resultRiskMeter" class="risk-meter"></div>
+                                        <div class="result-text">
+                                            <p class="result-percentage" id="resultPercentage">0%</p>
+                                            <p class="result-category" id="resultCategory">Low Risk</p>
+                                        </div>
+                                    </div>
+                                    <div class="result-description" id="resultDescription"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Page -->
+                <div id="analyticsPage" class="page-content">
+                    <div class="analytics-header">
+                        <h2>📊 Health Analytics</h2>
+                        <p>Visualize your health data over time</p>
+                    </div>
+
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <div class="chart-header">Risk Score Trend</div>
+                            <canvas id="riskChart"></canvas>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="chart-header">Health Metrics Comparison</div>
+                            <canvas id="metricsChart"></canvas>
+                        </div>
+                        <div class="analytics-card card-full">
+                            <div class="chart-header">3D Health Overview</div>
+                            <div id="chart3dAnalytics" class="chart-3d-container-large"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Page -->
+                <div id="profilePage" class="page-content">
+                    <div class="profile-header">
+                        <h2>👤 Your Profile</h2>
+                    </div>
+
+                    <div class="profile-container">
+                        <div class="profile-card">
+                            <div class="profile-avatar">
+                                <span id="avatarInitials">U</span>
+                            </div>
+                            <div class="profile-info">
+                                <h3 id="profileName">User Name</h3>
+                                <p id="profileEmail">user@email.com</p>
+                                <p id="profileMemberSince">Member since 2024</p>
+                            </div>
+                        </div>
+
+                        <div class="profile-stats">
+                            <div class="stat-box">
+                                <div class="stat-number" id="predictionCount">0</div>
+                                <div class="stat-label">Predictions</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="lastPredictionDate">-</div>
+                                <div class="stat-label">Last Prediction</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="averageRisk">-</div>
+                                <div class="stat-label">Average Risk</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <button onclick="exportData()" class="btn-secondary">📥 Export Data</button>
+                            <button onclick="logout()" class="btn-danger">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="loading-spinner" style="display:none;">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="3d-scene.js"></script>
+    <script src="auth.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

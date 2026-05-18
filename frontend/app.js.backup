@@ -1,0 +1,675 @@
+// Configuration
+const API_URL = 'http://localhost:5000/api';
+let currentUser = null;
+let currentToken = null;
+let currentPredictionId = null;
+let comparisonPredictionIds = [];
+
+// Translations
+const translations = {
+    en: {
+        loginTitle: "Welcome Back",
+        registerTitle: "Create Account",
+        dashboard: "Dashboard",
+        predict: "Predict",
+        history: "History",
+        settings: "Settings",
+    },
+    es: { /* Spanish translations */ },
+    fr: { /* French translations */ },
+    de: { /* German translations */ },
+    zh: { /* Chinese translations */ }
+};
+
+let currentLanguage = 'en';
+
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const token = localStorage.getItem('cvd_token');
+    if (token) {
+        currentToken = token;
+        showApp();
+        loadDashboard();
+    }
+
+    // Setup hamburger menu
+    const hamburger = document.getElementById('hamburger');
+    if (hamburger) {
+        hamburger.addEventListener('click', toggleMobileMenu);
+    }
+
+    // Setup voice/form mode toggle
+    setupPredictionModes();
+});
+
+// ===== PREDICTION MODE SWITCHING =====
+function setupPredictionModes() {
+    const formCard = document.querySelector('.form-card');
+    if (formCard) {
+        formCard.style.display = 'block';
+    }
+}
+
+function showFormMode() {
+    // Hide voice interface
+    document.getElementById('voiceModeInterface').style.display = 'none';
+    
+    // Show form
+    const formCard = document.querySelector('.form-card');
+    if (formCard) formCard.style.display = 'block';
+    
+    // Update button states
+    document.querySelectorAll('.btn-mode').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function showVoiceMode() {
+    // Hide form
+    const formCard = document.querySelector('.form-card');
+    if (formCard) formCard.style.display = 'none';
+    
+    // Hide health center
+    document.getElementById('healthCenterModeInterface').style.display = 'none';
+    
+    // Show voice interface
+    document.getElementById('voiceModeInterface').style.display = 'block';
+    
+    // Update button states
+    document.querySelectorAll('.btn-mode').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function showHealthCenterMode() {
+    // Hide form
+    const formCard = document.querySelector('.form-card');
+    if (formCard) formCard.style.display = 'none';
+    
+    // Hide voice interface
+    document.getElementById('voiceModeInterface').style.display = 'none';
+    
+    // Show health center
+    document.getElementById('healthCenterModeInterface').style.display = 'block';
+    
+    // Update button states
+    document.querySelectorAll('.btn-mode').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+// ===== AUTHENTICATION =====
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            showNotification(error.message || 'Login failed', 'error');
+            return;
+        }
+
+        const data = await response.json();
+        currentToken = data.token;
+        currentUser = data.user;
+
+        localStorage.setItem('cvd_token', currentToken);
+        localStorage.setItem('cvd_user', JSON.stringify(currentUser));
+
+        showNotification('Login successful!', 'success');
+        
+        setTimeout(() => {
+            showApp();
+            loadDashboard();
+        }, 500);
+    } catch (error) {
+        showNotification('Network error: ' + error.message, 'error');
+    }
+}
+
+async function handleRegister(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('regUsername').value;
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const confirmPassword = document.getElementById('regConfirmPassword').value;
+    const firstName = document.getElementById('regFirstName').value;
+    const lastName = document.getElementById('regLastName').value;
+
+    if (password !== confirmPassword) {
+        showNotification('Passwords do not match', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username,
+                email,
+                password,
+                first_name: firstName,
+                last_name: lastName
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            showNotification(error.message || 'Registration failed', 'error');
+            return;
+        }
+
+        const data = await response.json();
+        currentToken = data.token;
+        currentUser = data.user;
+
+        localStorage.setItem('cvd_token', currentToken);
+        localStorage.setItem('cvd_user', JSON.stringify(currentUser));
+
+        showNotification('Registration successful!', 'success');
+        
+        setTimeout(() => {
+            showApp();
+            loadDashboard();
+        }, 500);
+    } catch (error) {
+        showNotification('Network error: ' + error.message, 'error');
+    }
+}
+
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('cvd_token');
+        localStorage.removeItem('cvd_user');
+        currentToken = null;
+        currentUser = null;
+        
+        document.getElementById('appContainer').style.display = 'none';
+        document.getElementById('authContainer').style.display = 'block';
+        document.getElementById('loginPage').classList.add('active');
+        document.getElementById('registerPage').classList.remove('active');
+        
+        showNotification('Logged out successfully', 'success');
+    }
+}
+
+function deleteAccount() {
+    if (confirm('Are you sure? This action cannot be undone. All your data will be permanently deleted.')) {
+        if (confirm('Click OK again to confirm account deletion.')) {
+            showNotification('Account deletion feature coming soon', 'info');
+        }
+    }
+}
+
+// ===== UI NAVIGATION =====
+function showPage(pageName) {
+    // Hide all pages
+    document.querySelectorAll('#appContainer .page').forEach(page => {
+        page.classList.remove('active');
+    });
+
+    // Show selected page
+    document.getElementById(pageName + 'Page').classList.add('active');
+}
+
+function toggleAuth() {
+    document.getElementById('loginPage').classList.toggle('active');
+    document.getElementById('registerPage').classList.toggle('active');
+}
+
+function showApp() {
+    document.getElementById('authContainer').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'block';
+    showPage('dashboard');
+}
+
+function toggleMobileMenu() {
+    const navMenu = document.getElementById('navMenu');
+    navMenu.classList.toggle('active');
+}
+
+// ===== DASHBOARD =====
+async function loadDashboard() {
+    try {
+        // Load prediction history
+        const historyResponse = await fetch(`${API_URL}/predictions/history?limit=5`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+
+        if (!historyResponse.ok) throw new Error('Failed to load history');
+
+        const historyData = await historyResponse.json();
+        
+        // Update stats
+        document.getElementById('totalPredictions').textContent = historyData.total;
+
+        // Update recent predictions
+        const recentContainer = document.getElementById('recentPredictions');
+        if (historyData.predictions.length > 0) {
+            const latest = historyData.predictions[0];
+            document.getElementById('latestRisk').textContent = latest.risk_percentage.toFixed(1) + '%';
+            document.getElementById('latestDate').textContent = new Date(latest.created_at).toLocaleDateString();
+
+            let html = '<div class="predictions-list">';
+            historyData.predictions.forEach(pred => {
+                const riskClass = pred.risk_category;
+                html += `
+                    <div class="prediction-item">
+                        <strong>${new Date(pred.created_at).toLocaleDateString()}</strong>
+                        <p class="prediction-date">${new Date(pred.created_at).toLocaleTimeString()}</p>
+                        <p>Age: ${pred.age} | BMI: ${pred.bmi.toFixed(1)}</p>
+                        <span class="prediction-risk ${riskClass}">
+                            ${pred.risk_category.toUpperCase()}: ${pred.risk_percentage.toFixed(1)}%
+                        </span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            recentContainer.innerHTML = html;
+        } else {
+            recentContainer.innerHTML = '<p class="text-center">No predictions yet. Start by making an assessment!</p>';
+        }
+
+        // Calculate trend
+        if (historyData.predictions.length >= 2) {
+            const sorted = historyData.predictions.sort((a, b) => 
+                new Date(a.created_at) - new Date(b.created_at)
+            );
+            const first = sorted[0].risk_percentage;
+            const latest = sorted[sorted.length - 1].risk_percentage;
+            const diff = latest - first;
+            
+            if (diff < -2) {
+                document.getElementById('riskTrend').textContent = '📉 Improving';
+                document.getElementById('trendInfo').textContent = `Down ${Math.abs(diff).toFixed(1)}%`;
+            } else if (diff > 2) {
+                document.getElementById('riskTrend').textContent = '📈 Rising';
+                document.getElementById('trendInfo').textContent = `Up ${diff.toFixed(1)}%`;
+            } else {
+                document.getElementById('riskTrend').textContent = '➡️ Stable';
+                document.getElementById('trendInfo').textContent = `Within ±2%`;
+            }
+        }
+    } catch (error) {
+        console.error('Dashboard load error:', error);
+        showNotification('Failed to load dashboard', 'error');
+    }
+}
+
+// ===== PREDICTION =====
+async function handlePrediction(event) {
+    event.preventDefault();
+
+    const healthData = {
+        age: parseInt(document.getElementById('predAge').value),
+        gender: document.getElementById('predGender').value,
+        education: document.getElementById('predEducation').value,
+        systolic_bp: parseInt(document.getElementById('predSystolic').value),
+        diastolic_bp: parseInt(document.getElementById('predDiastolic').value),
+        cholesterol: parseInt(document.getElementById('predCholesterol').value),
+        bmi: parseFloat(document.getElementById('predBMI').value),
+        glucose: parseInt(document.getElementById('predGlucose').value),
+        heart_rate: parseInt(document.getElementById('predHeartRate').value),
+        cigarettes_per_day: parseInt(document.getElementById('predCigarettes').value) || 0,
+        stroke: document.getElementById('predStroke').checked,
+        hypertension: document.getElementById('predHypertension').checked,
+        diabetes: document.getElementById('predDiabetes').checked,
+        current_smoker: document.getElementById('predSmoker').checked,
+        notes: document.getElementById('predNotes').value
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/predictions/predict`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify(healthData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Prediction failed');
+        }
+
+        const data = await response.json();
+        currentPredictionId = data.prediction.id;
+
+        // Display results
+        displayResults(data.prediction);
+        showNotification('Prediction calculated successfully!', 'success');
+    } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+    }
+}
+
+function displayResults(prediction) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    
+    // Set risk category styling
+    const categoryElement = document.getElementById('resultCategory');
+    categoryElement.textContent = prediction.risk_category.toUpperCase();
+    categoryElement.style.color = getRiskColor(prediction.risk_category);
+
+    // Set percentage
+    document.getElementById('resultPercentage').textContent = 
+        prediction.risk_percentage.toFixed(1) + '%';
+
+    // Display recommendations
+    const recsList = document.getElementById('recommendationsList');
+    const recommendations = typeof prediction.recommendations === 'string'
+        ? prediction.recommendations.split('\n')
+        : prediction.recommendations;
+    
+    recsList.innerHTML = recommendations
+        .filter(r => r.trim())
+        .map(r => `<li>${r.trim()}</li>`)
+        .join('');
+
+    resultsContainer.style.display = 'block';
+    resultsContainer.scrollIntoView({ behavior: 'smooth' });
+}
+
+function getRiskColor(category) {
+    const colors = {
+        'low': '#2ecc71',
+        'medium': '#f39c12',
+        'high': '#e74c3c'
+    };
+    return colors[category] || '#3498db';
+}
+
+// ===== HISTORY & COMPARISON =====
+async function loadHistory() {
+    try {
+        const response = await fetch(`${API_URL}/predictions/history?limit=50`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load history');
+
+        const data = await response.json();
+        displayHistoryTable(data.predictions);
+    } catch (error) {
+        showNotification('Failed to load history', 'error');
+    }
+}
+
+function displayHistoryTable(predictions) {
+    const historyList = document.getElementById('historyList');
+    
+    if (predictions.length === 0) {
+        historyList.innerHTML = '<p class="text-center">No predictions found.</p>';
+        return;
+    }
+
+    let html = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>BP (Sys/Dia)</th>
+                    <th>Cholesterol</th>
+                    <th>BMI</th>
+                    <th>Risk %</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    predictions.forEach(pred => {
+        html += `
+            <tr>
+                <td>${new Date(pred.created_at).toLocaleDateString()}</td>
+                <td>${pred.age}</td>
+                <td>${pred.gender || '-'}</td>
+                <td>${pred.health_metrics.systolic_bp}/${pred.health_metrics.diastolic_bp}</td>
+                <td>${pred.health_metrics.cholesterol}</td>
+                <td>${pred.bmi.toFixed(1)}</td>
+                <td><strong>${pred.risk_percentage.toFixed(1)}%</strong></td>
+                <td><span class="prediction-risk ${pred.risk_category}">${pred.risk_category}</span></td>
+                <td>
+                    <button onclick="viewPrediction(${pred.id})" class="btn-secondary">View</button>
+                    <button onclick="toggleComparison(${pred.id})" class="btn-secondary">Compare</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table>';
+    historyList.innerHTML = html;
+}
+
+function viewPrediction(predictionId) {
+    showNotification('View details feature coming soon', 'info');
+}
+
+function toggleComparison(predictionId) {
+    const index = comparisonPredictionIds.indexOf(predictionId);
+    if (index > -1) {
+        comparisonPredictionIds.splice(index, 1);
+    } else {
+        comparisonPredictionIds.push(predictionId);
+    }
+
+    if (comparisonPredictionIds.length >= 2) {
+        showNotification(`${comparisonPredictionIds.length} predictions selected for comparison`, 'info');
+    }
+}
+
+async function compareMode() {
+    if (comparisonPredictionIds.length < 2) {
+        showNotification('Select at least 2 predictions to compare', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/predictions/compare`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({ prediction_ids: comparisonPredictionIds })
+        });
+
+        if (!response.ok) throw new Error('Comparison failed');
+
+        const data = await response.json();
+        displayComparison(data);
+    } catch (error) {
+        showNotification('Comparison failed: ' + error.message, 'error');
+    }
+}
+
+function displayComparison(data) {
+    const comparisonChart = document.getElementById('comparisonChart');
+    const improvement = data.improvement;
+
+    let html = `<div class="comparison-results">`;
+    html += `<p><strong>Risk Trend:</strong> ${improvement < 0 ? '📉 Improving' : '📈 Worsening'} (${improvement.toFixed(1)}%)</p>`;
+    html += `<table style="width: 100%; margin-top: 1rem;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Risk %</th>
+                <th>Category</th>
+            </tr>
+        </thead>
+        <tbody>`;
+    
+    data.risk_trend.forEach(item => {
+        const date = new Date(item.date);
+        html += `<tr>
+            <td>${date.toLocaleDateString()}</td>
+            <td><strong>${item.percentage.toFixed(1)}%</strong></td>
+            <td>${getCategory(item.percentage)}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    
+    document.getElementById('trendChart').innerHTML = html;
+    comparisonChart.style.display = 'block';
+    comparisonChart.scrollIntoView({ behavior: 'smooth' });
+}
+
+function getCategory(percentage) {
+    if (percentage < 10) return '🟢 Low';
+    if (percentage < 20) return '🟡 Medium';
+    return '🔴 High';
+}
+
+// ===== EXPORT =====
+async function exportPDF() {
+    if (!currentPredictionId) {
+        showNotification('No prediction to export', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/export/pdf/${currentPredictionId}`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+
+        if (!response.ok) throw new Error('PDF export failed');
+
+        const blob = await response.blob();
+        downloadFile(blob, 'cvd_report.pdf');
+        showNotification('PDF exported successfully', 'success');
+    } catch (error) {
+        showNotification('Export failed: ' + error.message, 'error');
+    }
+}
+
+async function exportCSV() {
+    try {
+        const response = await fetch(`${API_URL}/export/csv/history`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+
+        if (!response.ok) throw new Error('CSV export failed');
+
+        const blob = await response.blob();
+        downloadFile(blob, 'cvd_history.csv');
+        showNotification('CSV exported successfully', 'success');
+    } catch (error) {
+        showNotification('Export failed: ' + error.message, 'error');
+    }
+}
+
+function downloadFile(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+}
+
+// ===== SETTINGS =====
+async function updateProfile(event) {
+    event.preventDefault();
+
+    const profileData = {
+        first_name: document.getElementById('settingsFirstName').value,
+        last_name: document.getElementById('settingsLastName').value,
+        age: parseInt(document.getElementById('settingsAge').value) || null,
+        gender: document.getElementById('settingsGender').value,
+        language: currentLanguage
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/auth/profile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify(profileData)
+        });
+
+        if (!response.ok) throw new Error('Update failed');
+
+        const data = await response.json();
+        currentUser = data.user;
+        localStorage.setItem('cvd_user', JSON.stringify(currentUser));
+
+        showNotification('Profile updated successfully', 'success');
+    } catch (error) {
+        showNotification('Update failed: ' + error.message, 'error');
+    }
+}
+
+async function changePassword(event) {
+    event.preventDefault();
+
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (newPassword !== confirmPassword) {
+        showNotification('Passwords do not match', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/auth/change-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                old_password: oldPassword,
+                new_password: newPassword
+            })
+        });
+
+        if (!response.ok) throw new Error('Password change failed');
+
+        event.target.reset();
+        showNotification('Password changed successfully', 'success');
+    } catch (error) {
+        showNotification('Password change failed: ' + error.message, 'error');
+    }
+}
+
+function changeLanguage() {
+    currentLanguage = document.getElementById('languageSelect').value;
+    localStorage.setItem('cvd_language', currentLanguage);
+    showNotification(`Language changed to ${currentLanguage}`, 'info');
+    // In a full app, this would reload UI strings
+}
+
+// ===== NOTIFICATIONS =====
+function showNotification(message, type = 'info') {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification show ${type}`;
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 4000);
+}
+
+// ===== UTILITY =====
+function getCurrentUser() {
+    return currentUser || JSON.parse(localStorage.getItem('cvd_user') || '{}');
+}

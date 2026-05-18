@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❤️ CVD Risk Predictor - Cardiovascular Health Assessment</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <div class="navbar-brand">
+                    <h1>❤️ CVD Predictor</h1>
+                </div>
+                <ul class="navbar-menu" id="navMenu">
+                    <li><a href="#" onclick="showPage('dashboard')">Dashboard</a></li>
+                    <li><a href="#" onclick="showPage('predict')">Predict</a></li>
+                    <li><a href="#" onclick="showPage('history')">History</a></li>
+                    <li><a href="#" onclick="showPage('settings')">Settings</a></li>
+                    <li><a href="#" onclick="logout()" class="btn-logout">Logout</a></li>
+                </ul>
+                <div class="hamburger" id="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Auth Pages -->
+        <div id="authContainer">
+            <!-- Login Page -->
+            <div id="loginPage" class="page active">
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <div class="auth-header">
+                            <h2>Welcome Back</h2>
+                            <p>Login to your CVD Risk Predictor account</p>
+                        </div>
+                        <form onsubmit="handleLogin(event)">
+                            <div class="form-group">
+                                <label for="loginEmail">Email</label>
+                                <input type="email" id="loginEmail" required placeholder="your@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword">Password</label>
+                                <input type="password" id="loginPassword" required placeholder="••••••••">
+                            </div>
+                            <button type="submit" class="btn-primary">Login</button>
+                        </form>
+                        <p class="auth-toggle">Don't have an account? <a href="#" onclick="toggleAuth()">Register</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register Page -->
+            <div id="registerPage" class="page">
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <div class="auth-header">
+                            <h2>Create Account</h2>
+                            <p>Join CVD Risk Predictor today</p>
+                        </div>
+                        <form onsubmit="handleRegister(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="regFirstName">First Name</label>
+                                    <input type="text" id="regFirstName" placeholder="John">
+                                </div>
+                                <div class="form-group">
+                                    <label for="regLastName">Last Name</label>
+                                    <input type="text" id="regLastName" placeholder="Doe">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="regUsername">Username</label>
+                                <input type="text" id="regUsername" required placeholder="username">
+                            </div>
+                            <div class="form-group">
+                                <label for="regEmail">Email</label>
+                                <input type="email" id="regEmail" required placeholder="your@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="regPassword">Password</label>
+                                <input type="password" id="regPassword" required placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label for="regConfirmPassword">Confirm Password</label>
+                                <input type="password" id="regConfirmPassword" required placeholder="••••••••">
+                            </div>
+                            <button type="submit" class="btn-primary">Register</button>
+                        </form>
+                        <p class="auth-toggle">Already have an account? <a href="#" onclick="toggleAuth()">Login</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Container -->
+        <div id="appContainer" style="display: none;">
+            <!-- Dashboard Page -->
+            <div id="dashboardPage" class="page active">
+                <div class="container">
+                    <div class="page-header">
+                        <h2>Dashboard</h2>
+                        <p>Track your cardiovascular health</p>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <!-- Quick Stats -->
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <h3>Latest Assessment</h3>
+                                <p id="latestRisk" class="stat-value">--</p>
+                                <p id="latestDate" class="stat-date">No predictions yet</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Risk Trend</h3>
+                                <p id="riskTrend" class="stat-value">--</p>
+                                <p id="trendInfo" class="stat-date">Compare predictions</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Total Assessments</h3>
+                                <p id="totalPredictions" class="stat-value">0</p>
+                                <p class="stat-date">Tracked over time</p>
+                            </div>
+                        </div>
+
+                        <!-- Recent Predictions -->
+                        <div class="card">
+                            <h3>Recent Assessments</h3>
+                            <div id="recentPredictions" class="predictions-list">
+                                <p class="text-center">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Page -->
+            <div id="predictPage" class="page">
+                <div class="container">
+                    <div class="page-header">
+                        <h2>Health Assessment</h2>
+                        <p>Enter your health metrics for CVD risk evaluation</p>
+                    </div>
+
+                    <!-- Voice Mode Toggle -->
+                    <div class="card voice-mode-card">
+                        <div class="voice-mode-header">
+                            <h3>🎤 Choose Your Input Method</h3>
+                        </div>
+                        <div class="input-mode-buttons">
+                            <button class="btn-mode active" onclick="showFormMode()">📝 Type Form</button>
+                            <button class="btn-mode" onclick="showVoiceMode()">🎤 Voice Input (Patient)</button>
+                            <button class="btn-mode" onclick="showHealthCenterMode()">🏥 Health Center Mode</button>
+                        </div>
+                    </div>
+
+                    <!-- Voice Mode Interface -->
+                    <div id="voiceModeInterface" style="display: none;" class="card">
+                        <h3>🎤 Speak Your Health Information</h3>
+                        <p class="voice-description">Simply speak your answers. Our system will listen and understand your health information.</p>
+                        
+                        <div class="form-group">
+                            <label for="voiceLanguage">Language Preference</label>
+                            <select id="voiceLanguage" class="full-width">
+                                <option value="en">English 🇬🇧</option>
+                                <option value="hi">हिंदी (Hindi) 🇮🇳</option>
+                            </select>
+                        </div>
+
+                        <div class="voice-instructions">
+                            <h4>How It Works:</h4>
+                            <ul>
+                                <li>✅ Click the "Start Voice Assessment" button</li>
+                                <li>✅ Listen to each question</li>
+                                <li>✅ Speak your answer clearly</li>
+                                <li>✅ The system will listen and move to next question</li>
+                                <li>✅ Get your risk result in voice</li>
+                            </ul>
+                        </div>
+
+                        <button id="voiceButton" class="btn-primary btn-large btn-voice">
+                            🎤 Start Voice Assessment
+                        </button>
+
+                        <div id="voiceStatus" style="display: none;" class="voice-status">
+                            <p id="voiceStatusText">Listening...</p>
+                        </div>
+                    </div>
+
+                    <!-- Health Center Mode Interface -->
+                    <div id="healthCenterModeInterface" style="display: none;" class="card">
+                        <h3>🏥 Health Center/Clinic Mode</h3>
+                        <p class="voice-description">Health worker mode: Patient's measurements are already taken. Input the measured values using voice.</p>
+                        
+                        <div class="form-group">
+                            <label for="healthCenterLanguage">Language Preference</label>
+                            <select id="healthCenterLanguage" class="full-width">
+                                <option value="en">English 🇬🇧</option>
+                                <option value="hi">हिंदी (Hindi) 🇮🇳</option>
+                            </select>
+                        </div>
+
+                        <div class="health-center-info">
+                            <h4>📋 Instructions for Health Worker:</h4>
+                            <ol>
+                                <li>✅ Measure patient's: BP, Weight, Height, Cholesterol, Glucose, Heart Rate</li>
+                                <li>✅ Ask patient simple questions (age, gender, symptoms)</li>
+                                <li>✅ Click "Start Health Center Assessment"</li>
+                                <li>✅ Speak the measured values when system asks</li>
+                                <li>✅ System will calculate risk and give results</li>
+                                <li>✅ Print report for patient</li>
+                            </ol>
+                        </div>
+
+                        <div class="measurements-needed">
+                            <h4>📏 What You Need to Measure:</h4>
+                            <ul class="measurements-list">
+                                <li><strong>Blood Pressure:</strong> Use BP machine (example: 130/85)</li>
+                                <li><strong>Weight & Height:</strong> Use scale & measuring tape (to calculate BMI)</li>
+                                <li><strong>Cholesterol:</strong> From lab test report</li>
+                                <li><strong>Glucose:</strong> From lab test report</li>
+                                <li><strong>Heart Rate:</strong> Count pulse or use pulse oximeter</li>
+                            </ul>
+                        </div>
+
+                        <button id="healthCenterButton" class="btn-primary btn-large btn-voice" onclick="healthCenterMode()">
+                            🏥 Start Health Center Assessment
+                        </button>
+                    </div>
+
+                    <div class="card form-card">
+                        <form onsubmit="handlePrediction(event)" id="predictionForm">
+                            <div class="form-section">
+                                <h3>Personal Information</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="predAge">Age (years)</label>
+                                        <input type="number" id="predAge" required min="1" max="120">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="predGender">Gender</label>
+                                        <select id="predGender" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="predEducation">Education Level</label>
+                                        <select id="predEducation">
+                                            <option value="">Select Level</option>
+                                            <option value="high_school">High School</option>
+                                            <option value="some_college">Some College</option>
+                                            <option value="college">College</option>
+                                            <option value="graduate">Graduate</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Vital Signs</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="predSystolic">Systolic BP (mmHg)</label>
+                                        <input type="number" id="predSystolic" required min="70" max="250" placeholder="e.g., 120">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="predDiastolic">Diastolic BP (mmHg)</label>
+                                        <input type="number" id="predDiastolic" required min="40" max="150" placeholder="e.g., 80">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="predHeartRate">Heart Rate (bpm)</label>
+                                        <input type="number" id="predHeartRate" required min="30" max="200" placeholder="e.g., 72">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Blood Work</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="predCholesterol">Total Cholesterol (mg/dL)</label>
+                                        <input type="number" id="predCholesterol" required min="100" max="400" placeholder="e.g., 200">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="predGlucose">Glucose (mg/dL)</label>
+                                        <input type="number" id="predGlucose" required min="50" max="500" placeholder="e.g., 100">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Body Measurements</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="predBMI">BMI (kg/m²)</label>
+                                        <input type="number" id="predBMI" required min="10" max="60" step="0.1" placeholder="e.g., 25">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="predCigarettes">Cigarettes Per Day</label>
+                                        <input type="number" id="predCigarettes" min="0" max="100" value="0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Medical History</h3>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="predStroke">
+                                        <span>History of Stroke</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="predHypertension">
+                                        <span>Hypertension</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="predDiabetes">
+                                        <span>Diabetes</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="predSmoker">
+                                        <span>Current Smoker</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <div class="form-group">
+                                    <label for="predNotes">Additional Notes (Optional)</label>
+                                    <textarea id="predNotes" placeholder="Any additional health information..."></textarea>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary btn-large">Calculate Risk Assessment</button>
+                        </form>
+                    </div>
+
+                    <!-- Results -->
+                    <div id="resultsContainer" style="display: none;" class="card">
+                        <h3>Assessment Results</h3>
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <h4>Risk Category</h4>
+                                <p id="resultCategory" class="result-value">--</p>
+                            </div>
+                            <div class="result-item">
+                                <h4>10-Year Risk</h4>
+                                <p id="resultPercentage" class="result-value">--</p>
+                            </div>
+                        </div>
+
+                        <div class="recommendations-section">
+                            <h3>Personalized Recommendations</h3>
+                            <ul id="recommendationsList"></ul>
+                        </div>
+
+                        <div class="export-buttons">
+                            <button onclick="exportPDF()" class="btn-secondary">📥 Export PDF</button>
+                            <button onclick="exportCSV()" class="btn-secondary">📥 Export CSV</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div id="historyPage" class="page">
+                <div class="container">
+                    <div class="page-header">
+                        <h2>Assessment History</h2>
+                        <p>Track your progress over time</p>
+                    </div>
+
+                    <div class="history-controls">
+                        <button onclick="compareMode()" class="btn-secondary">Compare Assessments</button>
+                        <button onclick="loadHistory()" class="btn-secondary">Refresh</button>
+                    </div>
+
+                    <div class="card">
+                        <div id="historyList" class="history-table">
+                            <p class="text-center">Loading...</p>
+                        </div>
+                    </div>
+
+                    <div id="comparisonChart" style="display: none;" class="card">
+                        <h3>Risk Trend Comparison</h3>
+                        <div id="trendChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settingsPage" class="page">
+                <div class="container">
+                    <div class="page-header">
+                        <h2>Settings</h2>
+                        <p>Manage your account and preferences</p>
+                    </div>
+
+                    <div class="settings-grid">
+                        <!-- Profile Settings -->
+                        <div class="card">
+                            <h3>Profile Information</h3>
+                            <form onsubmit="updateProfile(event)" id="profileForm">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="settingsFirstName">First Name</label>
+                                        <input type="text" id="settingsFirstName" placeholder="First Name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="settingsLastName">Last Name</label>
+                                        <input type="text" id="settingsLastName" placeholder="Last Name">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="settingsAge">Age</label>
+                                        <input type="number" id="settingsAge" min="1" max="120">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="settingsGender">Gender</label>
+                                        <select id="settingsGender">
+                                            <option value="">Select</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-primary">Save Changes</button>
+                            </form>
+                        </div>
+
+                        <!-- Language Settings -->
+                        <div class="card">
+                            <h3>Language Preference</h3>
+                            <div class="form-group">
+                                <select id="languageSelect" onchange="changeLanguage()" class="full-width">
+                                    <option value="en" selected>English</option>
+                                    <option value="es">Español (Spanish)</option>
+                                    <option value="fr">Français (French)</option>
+                                    <option value="de">Deutsch (German)</option>
+                                    <option value="zh">中文 (Chinese)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Password Change -->
+                        <div class="card">
+                            <h3>Change Password</h3>
+                            <form onsubmit="changePassword(event)">
+                                <div class="form-group">
+                                    <label for="oldPassword">Current Password</label>
+                                    <input type="password" id="oldPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input type="password" id="newPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm Password</label>
+                                    <input type="password" id="confirmPassword" required>
+                                </div>
+                                <button type="submit" class="btn-primary">Update Password</button>
+                            </form>
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div class="card danger-zone">
+                            <h3>Danger Zone</h3>
+                            <p>Permanently delete your account and all data.</p>
+                            <button onclick="deleteAccount()" class="btn-danger">Delete Account</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="voice.js"></script>
+    <script src="health-center.js"></script>
+</body>
+</html>
